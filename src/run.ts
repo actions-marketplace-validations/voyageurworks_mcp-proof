@@ -76,10 +76,18 @@ export async function runAll(options: RunOptions): Promise<CompatRecord> {
     const scrub = (text: string) => scrubPaths(text, [[home.root, "<home>"], [options.self ?? SELF, "<mcp-proof>"], [process.execPath, "node"], ...Object.values(options.serverEnv).filter(value => value.length >= 3).map((value): [string, string] => [value, "<env value>"])]);
     const realHomeState = before === null || after === null ? "unknown" : compareSnapshots(before, after);
     const notes = run.notes.map(scrub);
+    const label = labelFor(handshake);
+    // A result that is not verified must say, in plain words, where it stopped.
+    if (label === "failed" && notes.length === 0) {
+      notes.push(handshake.methods.length === 0
+        ? "The client never reached the server: nothing was exchanged. Check that the server command works on its own, and whether the client asked for approval."
+        : "The client reached the server command, but initialize was never answered. The server may have exited at once; check that the command works on its own.");
+    }
+    if (label === "started" && notes.length === 0) notes.push("The server answered initialize, but tools/list was not answered.");
     if (realHomeState === "changed") notes.push("Files in your real home folder for this client changed during the run. mcp-proof only writes inside its throwaway home, so a copy of this client that was already running is the likely cause.");
     results.push({
       client: recipe.id, clientName: recipe.name, standin: !!recipe.standin, clientVersion: found.version ?? null,
-      label: labelFor(handshake), commands: run.commands.map(scrub), startedAt, durationMs: Date.now() - started,
+      label, commands: run.commands.map(scrub), startedAt, durationMs: Date.now() - started,
       methods: handshake.methods, realHome: realHomeState, notes,
     });
     if (!options.keep) rmSync(home.root, { recursive: true, force: true });

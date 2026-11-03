@@ -71,6 +71,19 @@ describe("runAll with a missing client", () => {
     expect(existsSync(SELF)).toBe(true);
   });
 
+  it("explains a failure in plain words even when the client gave no reason", async () => {
+    const silent: Recipe = { id: "silent", name: "Silent", realHomePaths: [], installHint: "", detect: async () => ({ installed: true, version: "1.0.0" }), run: async () => ({ commands: [], exitCode: 0, timedOut: false, notes: [] }) };
+    const record = await runAll({ server, recipes: [silent], serverEnv: {}, timeoutMs: 5_000, scratchRoot: scratch(), self: SELF });
+    expect(record.results[0]!.label).toBe("failed");
+    expect(record.results[0]!.notes[0]).toMatch(/never reached the server/);
+  });
+
+  it("says where a started-but-not-verified server stopped", async () => {
+    const record = await runAll({ server, recipes: [standin], serverEnv: { ECHO_SERVER_MODE: "no-tools" }, timeoutMs: 30_000, scratchRoot: scratch(), self: SELF });
+    expect(record.results[0]!.label).toBe("started");
+    expect(record.results[0]!.notes.join(" ")).toMatch(/tools\/list was not answered/);
+  });
+
   it("reports a recipe that throws as failed instead of crashing", async () => {
     const broken: Recipe = { id: "broken", name: "Broken", realHomePaths: [], installHint: "", detect: async () => ({ installed: true, version: "1.0.0" }), run: async () => { throw Object.assign(new Error("boom"), { code: "EBOOM" }); } };
     const record = await runAll({ server, recipes: [broken], serverEnv: {}, timeoutMs: 5_000, scratchRoot: scratch(), self: SELF });
