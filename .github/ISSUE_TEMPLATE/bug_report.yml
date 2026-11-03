@@ -1,0 +1,48 @@
+name: Bug report
+description: mcp-proof gave a wrong result, crashed, or broke its own promises.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste secrets, tokens, real paths from your machine or server output. mcp-proof's records hold only method names, so the `compat.json` it wrote is safe to attach after you have read it.
+        To report a security problem, use the repository's **Security** tab and **Report a vulnerability** instead of an issue.
+  - type: input
+    id: version
+    attributes:
+      label: mcp-proof version
+      description: Output of `mcp-proof --version`.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system and Node version
+      placeholder: Windows 11, Node 24 / Ubuntu 24.04, Node 22 / macOS 15, Node 22
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: Client and its version, if one was involved
+      placeholder: Claude Code 2.1.317
+  - type: textarea
+    id: command
+    attributes:
+      label: The command you ran
+      description: Remove anything private first (server arguments that hold keys, for example).
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: record
+    attributes:
+      label: The relevant part of compat.json (optional)
+      description: The `results` entry for the client that went wrong.
+      render: json

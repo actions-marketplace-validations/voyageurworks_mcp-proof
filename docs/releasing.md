@@ -6,11 +6,15 @@ Every step that goes outside this computer needs the owner's explicit yes, one s
 - The GitHub repository `voyageurworks/mcp-proof` exists and is **private**. It holds one clean first commit plus normal commits on top (author: `mcp-proof contributors <noreply@example.com>`). Only that history was pushed.
 - The CI workflow is green on GitHub-hosted runners: Ubuntu, macOS and Windows, Node 22 and 24, the built-in stand-in client, the Action run from a packed tarball, and Claude Code 2.1.317 installed from its official npm package on each system.
 - Nothing is tagged, released, published to npm, or public.
+- Already set on the repository: Actions are limited to GitHub-owned actions with full-length commit SHAs required (the workflows use only `actions/*`, pinned), the default token is read-only, and workflows cannot approve pull requests. `npm publish --dry-run --access public` was run and shows 25 files.
 
-## Steps left for the first release (owner steps)
-1. Decide whether to make the repository public. While it is private, GitHub bills macOS runner minutes at ten times and Windows at twice the normal rate against the free plan's allowance; a public repository has no such cost.
-2. Turn on private vulnerability reporting and branch protection for `main`, and create the `npm-publish` environment with a required reviewer.
-3. On npmjs.com, with the `@voyageurworks` scope in place: hand-publish `0.1.0` once from a clean checkout of the released commit with `npm publish --access public` (trusted publishing needs an existing package; `package.json` also sets `publishConfig.access`). Then add the trusted publisher for `voyageurworks/mcp-proof`, workflow `release.yml`, environment `npm-publish`.
+## Why the repository has to be public before the release gates exist
+GitHub's free plan does not offer required-reviewer environments, branch protection or private vulnerability reporting on a **private** repository (the API answers "billing plan" / "upgrade or make public"). They are free on a public one. So the order below matters: the approval gate that protects the release workflow cannot be created until the repository is public, and nothing may be published to npm before it exists.
+
+## Steps left for the first release (owner steps, in this order)
+1. **Make the repository public.** This is the launch decision: the code and its history become visible. It also ends the 10x macOS and 2x Windows billing of private-repo CI minutes.
+2. **Immediately set the gates** (the commands are in the launch pack): create the `npm-publish` environment with yourself as required reviewer, protect `main` (no force-push, no deletion, CI required), turn on private vulnerability reporting, and turn on secret scanning with push protection.
+3. On npmjs.com, with the `@voyageurworks` scope in place and you logged in (`npm login`, which only you do): hand-publish `0.1.0` once from a clean checkout of the released commit with `npm publish --access public` (trusted publishing needs an existing package; `package.json` also sets `publishConfig.access`). Then add the trusted publisher for `voyageurworks/mcp-proof`, workflow `release.yml`, environment `npm-publish`. Do not add the trusted publisher before step 2.
 4. Tag `v0.1.0` and create the GitHub release. The release workflow sees the version is already on npm and skips publishing.
 5. Create the `v0` tag that the Action's `@v0` refers to (a separate, deliberate step; move it on each later 0.x release).
 6. Optional, each its own yes: list the Action on the GitHub Marketplace, and list the package in the MCP directories you use.

@@ -1,0 +1,33 @@
+name: Client request
+description: Ask for a new client to be supported, or report that a supported client's commands changed.
+labels: [client]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A client is added only after its recipe has been run against the real product, so the more you can say about how to drive it from a command line, the faster it can happen. mcp-proof never installs a client; it only runs one that is already there.
+  - type: input
+    id: client
+    attributes:
+      label: Client and version
+      placeholder: Codex 0.166.0
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Official page for installing and configuring it
+      description: The vendor's own documentation, not a mirror or a blog.
+    validations:
+      required: true
+  - type: textarea
+    id: drive
+    attributes:
+      label: How can it be asked to start an MCP server from a command line?
+      description: For example a command that adds a server and a command that lists or health-checks servers, and whether it needs a login or an approval first.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else (home folder variables it reads, platforms you can test on)
