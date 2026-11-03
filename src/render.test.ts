@@ -25,6 +25,20 @@ describe("renderTable", () => {
   });
 });
 
+describe("renderTable with a hostile compat.json", () => {
+  it("never emits raw HTML and never lets a note start a new line or row", () => {
+    const record = sample();
+    record.results[0]!.clientName = "<script>alert(1)</script>";
+    record.results[0]!.clientVersion = '1"><img src=x>';
+    record.results[0]!.notes = ["first line\n| injected | row |\n- fake bullet"];
+    const table = renderTable(record);
+    expect(table).not.toMatch(/<script|<img/);
+    expect(table).toContain("&lt;script&gt;");
+    expect(table.split("\n").filter(line => line.startsWith("| injected"))).toEqual([]);
+    expect(table.split("\n").filter(line => line.startsWith("- fake bullet"))).toEqual([]);
+  });
+});
+
 describe("renderSummary", () => {
   it("prints the install hint for a missing client", () => {
     expect(renderSummary(sample())).toMatch(/Codex\s+not-installed\s+\(Install Codex by hand\.\)/);

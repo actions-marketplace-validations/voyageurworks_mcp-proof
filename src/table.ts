@@ -2,7 +2,10 @@ import type { CompatRecord } from "./compat.js";
 import { LABEL_MEANING } from "./evidence.js";
 import type { Label } from "./types.js";
 
-const escapeCell = (text: string) => text.replaceAll("|", "\\|").replaceAll("\n", " ");
+// Text in a compat.json may come from a file nobody here wrote, so it never reaches the Markdown as HTML or as a new line:
+// line breaks become spaces, and < and > become entities (which render as the same characters).
+const plain = (text: string) => text.replace(/\r?\n|\r/g, " ").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+const escapeCell = (text: string) => plain(text).replaceAll("|", "\\|");
 
 /**
  * A README-ready table of one record. Stand-in rows say so, and each label used is explained below the table,
@@ -17,7 +20,7 @@ export function renderTable(record: CompatRecord): string {
   });
   const used = [...new Set(record.results.map(result => result.label))] as Label[];
   const legend = used.map(label => `- **${label}**: ${LABEL_MEANING[label]}`);
-  const notes = record.results.flatMap(result => result.notes.map(note => `- ${result.clientName}: ${note}`));
+  const notes = record.results.flatMap(result => result.notes.map(note => `- ${plain(result.clientName)}: ${plain(note)}`));
   return [
     `Checked with mcp-proof ${record.version} on ${record.generatedAt.slice(0, 10)}.`,
     "",

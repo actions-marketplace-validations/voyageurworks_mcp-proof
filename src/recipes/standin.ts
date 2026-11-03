@@ -18,7 +18,7 @@ export const standin: Recipe = {
   async detect() { return { installed: true, version: "built-in" }; },
   async run(context: RunContext): Promise<RunResult> {
     const real = platformLaunch(context.wrapped);
-    const child = spawn(real.command, real.args, { cwd: context.workDir, env: { ...context.home.env, ...context.serverEnv }, stdio: ["pipe", "pipe", "inherit"], windowsHide: true, detached: process.platform !== "win32" });
+    const child = spawn(real.command, real.args, { cwd: context.workDir, env: { ...context.home.env, ...context.serverEnv }, stdio: ["pipe", "pipe", "inherit"], windowsHide: true, windowsVerbatimArguments: real.verbatim === true, detached: process.platform !== "win32" });
     trackChild(child);
     const notes: string[] = [];
     let timedOut = false;

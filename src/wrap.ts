@@ -14,7 +14,7 @@ export function wrap(logFile: string, launch: Launch, cwd?: string): Promise<num
   const fromClient = new LineLogger("client-to-server", record);
   const fromServer = new LineLogger("server-to-client", record);
   return new Promise(resolve => {
-    const child = spawn(real.command, real.args, { stdio: ["pipe", "pipe", "inherit"], windowsHide: true, ...(cwd ? { cwd } : {}) });
+    const child = spawn(real.command, real.args, { stdio: ["pipe", "pipe", "inherit"], windowsHide: true, windowsVerbatimArguments: real.verbatim === true, ...(cwd ? { cwd } : {}) });
     child.on("error", error => { process.stdin.destroy(); process.stderr.write(`mcp-proof: could not start the server: ${(error as NodeJS.ErrnoException).code ?? "error"}\n`); resolve(127); });
     process.stdin.on("data", chunk => { fromClient.push(chunk); child.stdin.write(chunk); });
     process.stdin.on("end", () => { fromClient.end(); child.stdin.end(); });

@@ -29,7 +29,7 @@ export function runProcess(launch: Launch, options: { env: Record<string, string
     let timedOut = false;
     let settled = false;
     const finish = (result: ProcResult) => { if (!settled) { settled = true; clearTimeout(timer); resolve(result); } };
-    const child = spawn(real.command, real.args, { cwd: options.cwd, env: options.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, detached: process.platform !== "win32" });
+    const child = spawn(real.command, real.args, { cwd: options.cwd, env: options.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: real.verbatim === true, detached: process.platform !== "win32" });
     trackChild(child);
     const timer = setTimeout(() => { timedOut = true; killTree(child.pid); }, options.timeoutMs);
     child.stdout.on("data", chunk => { if (stdout.length < CAP) stdout += chunk.toString("utf8"); });
