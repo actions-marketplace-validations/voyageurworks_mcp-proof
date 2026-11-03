@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addArguments } from "./claudeCode.js";
+import { addArguments, claudeEnv } from "./claudeCode.js";
 import { RECIPES, recipeById } from "./index.js";
 
 describe("claude mcp add arguments", () => {
@@ -14,6 +14,20 @@ describe("claude mcp add arguments", () => {
   it("puts the command after a double dash, unchanged", () => {
     const args = addArguments({ serverEnv: {}, wrapped });
     expect(args.slice(args.indexOf("--") + 1)).toEqual(["node", ...wrapped.args]);
+  });
+});
+
+describe("claudeEnv", () => {
+  const home = { root: "/h", env: { HOME: "/h", PATH: "/bin" } };
+  it("gives Claude Code a start-up wait that follows mcp-proof's own timeout", () => {
+    expect(claudeEnv({ home, timeoutMs: 90_000 }).MCP_TIMEOUT).toBe("80000");
+    expect(claudeEnv({ home, timeoutMs: 5_000 }).MCP_TIMEOUT).toBe("10000");
+  });
+  it("keeps the throwaway home and adds nothing from the caller's environment", () => {
+    const env = claudeEnv({ home, timeoutMs: 60_000 });
+    expect(env.HOME).toBe("/h");
+    expect(env.CLAUDE_CONFIG_DIR).toBe("/h/.claude");
+    expect(Object.keys(env).sort()).toEqual(["CLAUDE_CONFIG_DIR", "HOME", "MCP_TIMEOUT", "PATH"]);
   });
 });
 

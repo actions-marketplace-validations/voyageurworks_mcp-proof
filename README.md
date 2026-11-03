@@ -105,7 +105,7 @@ They solve different problems and work well together: use Inspector to debug and
 - `verified` is the handshake plus `tools/list`. It does not call a tool or test what a tool returns.
 - A client that needs a login or an interactive approval before it will start a server cannot be driven and will show `failed` or `started`, with a note.
 - macOS has its own workflow and badge because GitHub's free macOS runners are often not assigned at all. A `cancelled` macOS run that never started a step means no runner, not a failing test; it says nothing about the code either way. The commits whose macOS jobs passed are named above.
-- A first run against a server that must be downloaded (a cold `npx` cache) can exceed the client's start-up window and show `failed`; run it again once the download is cached.
+- Claude Code waits for a server to start for a limited time. mcp-proof sets that wait from `--timeout` (90 seconds by default, minus a small margin), so a server that first has to be downloaded is fine up to that; beyond it the result is `failed`, and a second run goes faster once the download is cached. (Versions before the next release used Claude Code's own default of about 30 seconds, which a cold download could exceed.)
 - Client command lines change between versions. Every result records the client version and the exact commands.
 
 ## Development

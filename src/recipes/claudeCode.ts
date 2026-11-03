@@ -4,6 +4,16 @@ import type { Recipe, RunContext, RunResult } from "../types.js";
 const NAME = "proofsrv";
 
 /**
+ * The environment Claude Code runs in. MCP_TIMEOUT is Claude Code's own setting for how long it waits for an MCP server to
+ * start (milliseconds). Its default is about 30 seconds, which a server that must first be downloaded (a cold `npx` cache)
+ * can exceed, so the run would show `failed` for a server that is only slow. It is set from mcp-proof's own --timeout,
+ * leaving 10 seconds for the rest of the run, and never below 10 seconds.
+ */
+export function claudeEnv(context: Pick<RunContext, "home" | "timeoutMs">): Record<string, string> {
+  return { ...context.home.env, CLAUDE_CONFIG_DIR: `${context.home.root}/.claude`, MCP_TIMEOUT: String(Math.max(10_000, context.timeoutMs - 10_000)) };
+}
+
+/**
  * The arguments of `claude mcp add`. The server name must come BEFORE -e: the option takes several values, so a name placed
  * after it is read as one more variable and the command fails ("Invalid environment variable format").
  */
@@ -29,7 +39,7 @@ export const claudeCode: Recipe = {
     return { installed: true, version: /\d+\.\d+\.\d+/.exec(result.stdout)?.[0] };
   },
   async run(context: RunContext): Promise<RunResult> {
-    const env = { ...context.home.env, CLAUDE_CONFIG_DIR: `${context.home.root}/.claude` };
+    const env = claudeEnv(context);
     const notes: string[] = [];
     const add = await runProcess({ command: "claude", args: addArguments(context) }, { env, cwd: context.workDir, timeoutMs: 60_000 });
     if (!add.started || add.code !== 0) {

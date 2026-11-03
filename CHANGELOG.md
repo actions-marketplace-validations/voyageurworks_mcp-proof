@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.0 (not yet released)
+## Unreleased
+- Claude Code is started with `MCP_TIMEOUT` set from mcp-proof's `--timeout`, so a server that first has to be downloaded (a cold `npx` cache) no longer shows `failed` because Claude Code's default start-up wait of about 30 seconds ran out. Measured with a server that takes 40 seconds to become ready: `failed` after 32 s before, `verified` after 42 s now.
+- The macOS checks run in their own workflow, so a missing GitHub macOS runner cannot turn `CI` red.
+
+## 0.1.0 (2026-11-03)
 First release. While the version is 0.x, the command line may still change in a minor release; `compat.json` schema 1 is meant to stay stable.
 
 - `mcp-proof run` starts each client in a fresh throwaway home, has it run your server through a method-name-only wrapper, and labels the result `verified`, `started`, `failed` or `not-installed`.
