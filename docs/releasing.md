@@ -4,19 +4,18 @@ Every step that goes outside this computer needs the owner's explicit yes, one s
 
 ## Where things stand (2026-11-03)
 - The GitHub repository `voyageurworks/mcp-proof` exists and is **public** (made public on 2026-11-03). It holds one clean first commit plus normal commits on top (author: `mcp-proof contributors <noreply@example.com>`). Only that history was pushed.
-- The CI workflow is green on GitHub-hosted runners: Ubuntu, macOS and Windows, Node 22 and 24, the built-in stand-in client, the Action run from a packed tarball, and Claude Code 2.1.317 installed from its official npm package on each system.
-- Nothing is tagged, released or published to npm yet.
+- `CI` (Ubuntu and Windows, Node 22 and 24, the stand-in client, the Action run from a packed tarball, Claude Code 2.1.317 installed from its official npm package) is green on `main`; macOS is its own workflow. The full matrix on the release tag `v0.1.0` (commit `2dd6e91`) passed on Ubuntu, Windows **and macOS** on 2026-11-03.
+- `0.1.0` was published to npm by hand on 2026-11-03 (tarball shasum `29e1786cbd2cb7de5230f91c72a411e32dcee1c0`, no provenance because it was hand-published), tagged `v0.1.0` on the commit it was built from (`2dd6e91`) and released on GitHub. The release workflow saw the version was already on npm and published nothing. The Action tag `v0` points at the same commit.
 - Gates set when it went public: the `npm-publish` environment with a required reviewer, private vulnerability reporting, secret scanning with push protection, branch protection on `main` (no force-push, no deletion, the Ubuntu and Windows checks required; the macOS job is reported but not required, because GitHub's free macOS runners are often unavailable and a required check that cannot run would block every merge), and approval before a first-time outside contributor's workflow runs.
 - Already set on the repository: Actions are limited to GitHub-owned actions with full-length commit SHAs required (the workflows use only `actions/*`, pinned), the default token is read-only, and workflows cannot approve pull requests. `npm publish --dry-run --access public` was run and shows 25 files.
 
 ## Why the gates could only be set once the repository was public
 GitHub's free plan does not offer required-reviewer environments, branch protection or private vulnerability reporting on a **private** repository. They are free on a public one, so the repository was made public first and the gates were set straight away, before anything was published.
 
-## Steps left for the first release (owner steps, in this order)
-1. On npmjs.com, with the `@voyageurworks` scope in place and you logged in (`npm login`, which only you do): hand-publish `0.1.0` once from a clean checkout of the released commit with `npm publish --access public` (trusted publishing needs an existing package; `package.json` also sets `publishConfig.access`). Then add the trusted publisher for `voyageurworks/mcp-proof`, workflow `release.yml`, environment `npm-publish`. Do not add the trusted publisher before step 2.
-2. Tag `v0.1.0` and create the GitHub release. The release workflow sees the version is already on npm and skips publishing.
-3. Create the `v0` tag that the Action's `@v0` refers to (a separate, deliberate step; move it on each later 0.x release).
-4. Optional, each its own yes: list the Action on the GitHub Marketplace, and list the package in the MCP directories you use.
+## Steps left (owner steps)
+1. Add the **trusted publisher** on npmjs.com (the package's settings, Trusted Publisher, GitHub Actions): repository `voyageurworks/mcp-proof`, workflow `release.yml`, environment `npm-publish`. Only then can the next release (0.1.1) be published by the workflow, with provenance, after your approval at the `npm-publish` gate.
+2. Optional, each its own yes: list the Action on the GitHub Marketplace, and list the package in the MCP directories you use.
+3. On each later 0.x release, move the `v0` tag to the new release commit.
 
 ## macOS and the full matrix
 GitHub's free macOS runners are scarce (a free plan gets at most 5 macOS jobs at once, and runs sometimes sit unassigned for 20 to 30 minutes and are then cancelled with "not acquired by Runner of type hosted"). So macOS has its own workflow (`macos.yml`, its own badge), apart from `CI` (Ubuntu and Windows): a runner shortage can never turn `CI` red, and the macOS run list says honestly whether macOS ran. An ordinary push starts `CI` and **one** macOS job; a `v*` tag, or Actions, macOS, Run workflow with `full` = true, also checks Node 24 on macOS. Only the `CI` jobs are required checks on `main`.

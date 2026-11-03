@@ -47,8 +47,8 @@ mcp-proof stand-in client  verified built-in
 
 | Client | How it is driven | Checked |
 | --- | --- | --- |
-| Claude Code | `claude mcp add` then `claude mcp list` in a throwaway home (`CLAUDE_CONFIG_DIR` and all home variables redirected). Claude Code's health check starts the server and sends `initialize`, `notifications/initialized` and `tools/list`. No login is needed. | Claude Code 2.1.317, by hand on Windows 11 and in GitHub Actions on Ubuntu and Windows runners (installed from its official npm package), and on macOS in the same way on commit `8914a09`, 2026-11-03. |
-| Built-in stand-in | A minimal client inside mcp-proof: `initialize`, `notifications/initialized`, `tools/list`. It is **not a real client product** and is labelled that way everywhere. | GitHub Actions on Ubuntu and Windows with Node 22 and 24 (the `CI` badge), on macOS in a separate workflow (the `macOS` badge; passed on commit `8914a09`), and by hand on Windows 11 and on Ubuntu under WSL. A timeout or Ctrl-C stops the server and removes the throwaway folders (tested on Linux; on macOS on commit `8914a09`). |
+| Claude Code | `claude mcp add` then `claude mcp list` in a throwaway home (`CLAUDE_CONFIG_DIR` and all home variables redirected). Claude Code's health check starts the server and sends `initialize`, `notifications/initialized` and `tools/list`. No login is needed. | Claude Code 2.1.317, by hand on Windows 11 and in GitHub Actions on Ubuntu and Windows runners (installed from its official npm package), and on macOS in the same way on the release commit `2dd6e91` (the `v0.1.0` tag) and on `33f90fa`, 2026-11-03. |
+| Built-in stand-in | A minimal client inside mcp-proof: `initialize`, `notifications/initialized`, `tools/list`. It is **not a real client product** and is labelled that way everywhere. | GitHub Actions on Ubuntu and Windows with Node 22 and 24 (the `CI` badge), on macOS in a separate workflow (the `macOS` badge; passed on the release commit `2dd6e91` and on `33f90fa`), and by hand on Windows 11 and on Ubuntu under WSL. A timeout or Ctrl-C stops the server and removes the throwaway folders (tested on Linux and macOS in CI). |
 
 More clients are added as recipes, each tested against the real client before it is listed. mcp-proof does not claim support for a client it has not run.
 
@@ -104,7 +104,7 @@ They solve different problems and work well together: use Inspector to debug and
 - One real client in this version. A claim for any other client needs that client's recipe, tested on the real product.
 - `verified` is the handshake plus `tools/list`. It does not call a tool or test what a tool returns.
 - A client that needs a login or an interactive approval before it will start a server cannot be driven and will show `failed` or `started`, with a note.
-- macOS has its own workflow and badge because GitHub's free macOS runners are often not assigned at all. A `cancelled` macOS run that never started a step means no runner, not a failing test; it says nothing about the code either way. The last commit whose macOS jobs passed is named above.
+- macOS has its own workflow and badge because GitHub's free macOS runners are often not assigned at all. A `cancelled` macOS run that never started a step means no runner, not a failing test; it says nothing about the code either way. The commits whose macOS jobs passed are named above.
 - A first run against a server that must be downloaded (a cold `npx` cache) can exceed the client's start-up window and show `failed`; run it again once the download is cached.
 - Client command lines change between versions. Every result records the client version and the exact commands.
 
