@@ -1,0 +1,53 @@
+import { describe, expect, it } from "vitest";
+import { badgeSvg, renderBadges, slug } from "./badge.js";
+import { sample } from "./compat.test.js";
+import { renderSummary, renderTable } from "./table.js";
+
+describe("renderTable", () => {
+  it("shows each client, explains each label used, and says stand-ins are not products", () => {
+    const record = sample();
+    record.results.push({ ...record.results[0]!, client: "standin", clientName: "mcp-proof stand-in client", standin: true, clientVersion: "built-in" });
+    const table = renderTable(record);
+    expect(table).toContain("| Claude Code | 2.1.317 |");
+    expect(table).toContain("stand-in, not a real product");
+    expect(table).toContain("- **verified**:");
+    expect(table).toContain("- **not-installed**:");
+    expect(table).not.toContain("- **failed**:");
+    expect(table).toContain("2026-11-03");
+  });
+  it("escapes pipes in cells and lists notes", () => {
+    const record = sample();
+    record.results[0]!.clientName = "A|B";
+    record.results[0]!.notes = ["watch out"];
+    const table = renderTable(record);
+    expect(table).toContain("A\\|B");
+    expect(table).toContain("- A|B: watch out");
+  });
+});
+
+describe("renderSummary", () => {
+  it("prints the install hint for a missing client", () => {
+    expect(renderSummary(sample())).toMatch(/Codex\s+not-installed\s+\(Install Codex by hand\.\)/);
+  });
+});
+
+describe("badges", () => {
+  it("makes an svg and a Shields endpoint file per client, with escaped text", () => {
+    const record = sample();
+    record.results[0]!.clientName = "A&B <x>";
+    const files = renderBadges(record);
+    expect(files.map(file => file.name)).toEqual(["claude-code.svg", "claude-code.json", "codex.svg", "codex.json"]);
+    const svg = files[0]!.content;
+    expect(svg).toContain("A&amp;B &lt;x&gt;");
+    expect(svg).not.toContain("<x>");
+    expect(JSON.parse(files[1]!.content)).toEqual({ schemaVersion: 1, label: "A&B <x>", message: "verified 2.1.317", color: "brightgreen" });
+    expect(JSON.parse(files[3]!.content).color).toBe("lightgrey");
+  });
+  it("slug is file-name safe", () => {
+    expect(slug("Claude Code / CLI!")).toBe("claude-code-cli");
+    expect(slug("***")).toBe("client");
+  });
+  it("badgeSvg has a title for accessibility", () => {
+    expect(badgeSvg("a", "b", "#000")).toContain("<title>a: b</title>");
+  });
+});

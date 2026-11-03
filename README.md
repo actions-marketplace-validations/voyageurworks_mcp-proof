@@ -1,0 +1,116 @@
+# mcp-proof
+
+[![CI](https://github.com/voyageurworks/mcp-proof/actions/workflows/ci.yml/badge.svg)](https://github.com/voyageurworks/mcp-proof/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**Prove that your MCP server really starts in real clients, with dated, labelled evidence you can paste into your README.**
+
+```sh
+npx -y @voyageurworks/mcp-proof run -- npx -y your-mcp-server
+```
+
+You need Node 22 or newer. mcp-proof starts each client it finds in a fresh throwaway home folder, tells the client to run your server, watches the conversation, and records what actually happened. It never installs a client and never touches your real client settings.
+
+## What it looks like
+
+A real run on Windows 11 against the published `@voyageurworks/handoff-desk` server (mcp-proof 0.1.0, 2026-11-03):
+
+```text
+Claude Code                verified 2.1.317
+mcp-proof stand-in client  verified built-in
+```
+
+`--out ./proof` also writes a README-ready table, a machine-readable `compat.json` and static badges:
+
+| Client | Version | System | Result | Date |
+| --- | --- | --- | --- | --- |
+| Claude Code | 2.1.317 | win32 x64, Node 24.20.0 | verified | 2026-11-03 |
+| mcp-proof stand-in client (stand-in, not a real product) | built-in | win32 x64, Node 24.20.0 | verified | 2026-11-03 |
+
+## Why
+
+"Works with Claude Code, Cursor, Codex" usually means "I tried it once on my machine" or "the documentation says so". The failures people hit are client specific: `npx` needs `cmd /c` on Windows, config keys differ between clients, a trust prompt leaves a server "Disabled". mcp-proof gives a claim a date, a client version, an operating system and the exact commands behind it, so a reader can tell what ran.
+
+## What the labels mean
+
+| Label | Meaning |
+| --- | --- |
+| `verified` | The client started the server. The log shows `initialize` answered, `notifications/initialized` sent and `tools/list` answered. |
+| `started` | The client started the server and `initialize` was answered, but `tools/list` was not. |
+| `failed` | The client ran, but the server never completed `initialize` (or the client could not be driven). |
+| `not-installed` | The client is not on this machine, so nothing was run. mcp-proof prints where to install it by hand. |
+
+`read` and `documented` exist in the file format for claims that did not start a server; mcp-proof itself never produces them.
+
+## Clients in this version
+
+| Client | How it is driven | Checked |
+| --- | --- | --- |
+| Claude Code | `claude mcp add` then `claude mcp list` in a throwaway home (`CLAUDE_CONFIG_DIR` and all home variables redirected). Claude Code's health check starts the server and sends `initialize`, `notifications/initialized` and `tools/list`. No login is needed. | Claude Code 2.1.317 on Windows 11. macOS and Linux are not run by the maintainers; the CI matrix runs the stand-in only. |
+| Built-in stand-in | A minimal client inside mcp-proof: `initialize`, `notifications/initialized`, `tools/list`. It is **not a real client product** and is labelled that way everywhere. | Run by the maintainers on Windows 11 and on Linux (Ubuntu under WSL, Node 24.21), including a timeout with no orphaned server left behind. macOS has not been run by hand; the CI workflow in this repository covers Linux, macOS and Windows. |
+
+More clients are added as recipes, each tested against the real client before it is listed. mcp-proof does not claim support for a client it has not run.
+
+## Use
+
+```sh
+mcp-proof run [options] -- <server command> [args...]
+mcp-proof clients                    # which clients are installed here
+mcp-proof table compat.json          # Markdown table
+mcp-proof badge compat.json --out badges
+mcp-proof validate compat.json
+```
+
+Options for `run`: `--client <id>` (repeatable; default every client), `--env NAME[=VALUE]` (give the server a variable; `NAME` alone copies it from your shell), `--out <dir>`, `--json`, `--timeout <seconds>`, `--cwd <dir>` (the server's working folder; default the current folder), `--scratch <dir>`, `--keep`.
+
+Exit codes: `0` every client that ran was verified (and at least one ran), `1` a client ran but did not verify or a client you named is missing, `2` a usage problem.
+
+### In GitHub Actions
+
+```yaml
+- uses: voyageurworks/mcp-proof@v0
+  with:
+    server: npx -y your-mcp-server
+    out: proof
+```
+
+The Action runs on the runner you choose, so it only finds clients you installed in an earlier step. It never installs clients. See [docs/how-it-works.md](docs/how-it-works.md).
+
+## What it records, and what it never does
+
+- **The log holds method names only.** For every message it stores the direction, the kind (request, notification, response, error), the method name and a plain integer id. Parameters, results, tool names, tool output and every other field are dropped before anything is written, so a log or `compat.json` can be shown to anyone, including an AI assistant.
+- **Credentials do not reach the client.** The client's environment is built from an allow-list (path, temp folder, proxy settings, locale). Anything that looks like a login (`*KEY*`, `*TOKEN*`, `*SECRET*`, `ANTHROPIC_*` and so on) is not passed on. A variable your server needs is given with `--env`; only its name is recorded, and its value is also scrubbed from notes. The value does have to reach the client, so it is written into the client's config inside the throwaway home; that home is deleted when the run ends, but a home you keep with `--keep` (or one left by a run that was killed) holds those values until you delete it.
+- **Your command line is scrubbed.** Arguments that follow a flag like `--api-key`, `NAME=value` pairs with a sensitive name, long random-looking words and passwords inside URLs are replaced with `<redacted>` in the record.
+- **No private paths.** Throwaway paths are shown as `<home>`; nothing from your real home appears.
+- **No installs, no network of its own.** mcp-proof never downloads or installs a client. It makes no network calls itself (your server and the client may).
+- **Real-home check.** For clients with a known settings folder it compares that folder before and after the run and records `unchanged` or `changed`. If a copy of that client was already running, `changed` can be a false alarm; mcp-proof says so in the notes.
+
+## Next to similar tools
+
+Claims below come from each project's own README or description, read on 2026-11-03, and may be out of date.
+
+| | mcp-proof | [MCP Inspector](https://github.com/modelcontextprotocol/inspector) CLI | Conformance Actions (for example [mcp-use/mcp-conformance-action](https://github.com/mcp-use/mcp-conformance-action)) | [canimcp](https://github.com/blues/canimcp) |
+| --- | --- | --- | --- | --- |
+| Runs your server through real client products | Yes (Claude Code in this version) | No: it is its own client | No: protocol checks against a server | No: a static compatibility table |
+| Dated evidence per client version and OS | Yes | No | No | A table, not generated from your server |
+| Debug a server interactively | No | Yes | No | No |
+| Protocol conformance | No | Partly | Yes | No |
+
+They solve different problems and work well together: use Inspector to debug and a conformance suite to check the protocol, then mcp-proof to show which real clients start your server.
+
+## Limits
+
+- One real client in this version. A claim for any other client needs that client's recipe, tested on the real product.
+- `verified` is the handshake plus `tools/list`. It does not call a tool or test what a tool returns.
+- A client that needs a login or an interactive approval before it will start a server cannot be driven and will show `failed` or `started`, with a note.
+- Client command lines change between versions. Every result records the client version and the exact commands.
+
+## Development
+
+```sh
+pnpm install
+pnpm test      # builds first, then runs the tests
+pnpm check
+```
+
+MIT licence. By [Voyageur Works](https://github.com/voyageurworks).

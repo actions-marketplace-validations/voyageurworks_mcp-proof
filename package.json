@@ -1,0 +1,23 @@
+{
+  "name": "@voyageurworks/mcp-proof",
+  "version": "0.1.0",
+  "description": "Prove an MCP server starts in real clients: runs it through each client in a throwaway home and records dated, labelled evidence.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/voyageurworks/mcp-proof.git" },
+  "type": "module",
+  "bin": { "mcp-proof": "dist/main.js" },
+  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "SECURITY.md", "docs", "action.yml"],
+  "engines": { "node": ">=22" },
+  "keywords": ["mcp", "model-context-protocol", "compatibility", "testing", "claude-code", "ci"],
+  "scripts": {
+    "build": "tsc -p .",
+    "check": "tsc -p . --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm check && pnpm test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

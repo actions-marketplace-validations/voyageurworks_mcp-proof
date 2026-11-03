@@ -1,0 +1,63 @@
+name: mcp-proof
+description: Prove that your MCP server starts in the real clients installed on the runner, with dated, labelled evidence.
+author: Voyageur Works
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  server:
+    description: The command that starts your MCP server, for example "npx -y your-mcp-server".
+    required: true
+  clients:
+    description: Space-separated client ids to run (see "mcp-proof clients"). Default is every client; those not installed are reported as not-installed.
+    required: false
+    default: ""
+  env:
+    description: Space-separated NAME or NAME=VALUE entries to give the server. A bare NAME copies the variable from the job environment; only names are recorded.
+    required: false
+    default: ""
+  out:
+    description: Folder to write compat.json, table.md and badges into.
+    required: false
+    default: mcp-proof-out
+  timeout:
+    description: Seconds allowed per client.
+    required: false
+    default: "90"
+  version:
+    description: Version range of @voyageurworks/mcp-proof to run.
+    required: false
+    default: "0"
+
+outputs:
+  out:
+    description: The folder the results were written to.
+    value: ${{ inputs.out }}
+
+runs:
+  using: composite
+  steps:
+    # Inputs reach the shell only through environment variables, never by being pasted into the script text.
+    - name: Run mcp-proof
+      shell: bash
+      env:
+        MCP_PROOF_SERVER: ${{ inputs.server }}
+        MCP_PROOF_CLIENTS: ${{ inputs.clients }}
+        MCP_PROOF_ENV: ${{ inputs.env }}
+        MCP_PROOF_OUT: ${{ inputs.out }}
+        MCP_PROOF_TIMEOUT: ${{ inputs.timeout }}
+        MCP_PROOF_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        args=(run --server "$MCP_PROOF_SERVER" --out "$MCP_PROOF_OUT" --timeout "$MCP_PROOF_TIMEOUT")
+        for id in $MCP_PROOF_CLIENTS; do args+=(--client "$id"); done
+        for item in $MCP_PROOF_ENV; do args+=(--env "$item"); done
+        npx -y "@voyageurworks/mcp-proof@${MCP_PROOF_VERSION}" "${args[@]}"
+    - name: Add the table to the job summary
+      if: always()
+      shell: bash
+      env:
+        MCP_PROOF_OUT: ${{ inputs.out }}
+      run: |
+        if [ -f "$MCP_PROOF_OUT/table.md" ] && [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then cat "$MCP_PROOF_OUT/table.md" >> "$GITHUB_STEP_SUMMARY"; fi
