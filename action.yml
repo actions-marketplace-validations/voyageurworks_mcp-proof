@@ -59,7 +59,8 @@ runs:
         for id in $MCP_PROOF_CLIENTS; do args+=(--client "$id"); done
         for item in $MCP_PROOF_ENV; do args+=(--env "$item"); done
         spec="${MCP_PROOF_PACKAGE:-@voyageurworks/mcp-proof@${MCP_PROOF_VERSION}}"
-        npx -y "$spec" "${args[@]}"
+        # npm exec takes a registry spec or a tarball path alike; npx would try to run a bare path as a program.
+        npm exec --yes --package="$spec" -- mcp-proof "${args[@]}"
     - name: Add the table to the job summary
       if: always()
       shell: bash
