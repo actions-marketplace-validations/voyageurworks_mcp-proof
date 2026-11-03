@@ -19,8 +19,14 @@ GitHub's free plan does not offer required-reviewer environments, branch protect
 5. Create the `v0` tag that the Action's `@v0` refers to (a separate, deliberate step; move it on each later 0.x release).
 6. Optional, each its own yes: list the Action on the GitHub Marketplace, and list the package in the MCP directories you use.
 
+## macOS and the full matrix
+GitHub's free macOS runners are scarce (a free plan gets at most 5 macOS jobs at once, and runs sometimes sit unassigned for 20 to 30 minutes and are then cancelled with "not acquired by Runner of type hosted"). So an ordinary push runs Ubuntu and Windows plus **one** macOS job; the **full** matrix (everything on all three systems, macOS on Node 22 and 24) runs when a `v*` tag is pushed, or by hand from Actions, CI, Run workflow, `full` = true.
+- A cancelled macOS job is not a code failure. Re-run only the failed jobs and try again later; do not edit code for it. Never leave several macOS runs queued: the workflow cancels a stale run on the same ref.
+- If macOS cannot run when you want to release, release anyway and say so by commit: name the last commit whose macOS jobs passed, its date, and that the release commit was not re-run on macOS. Do not claim more than ran.
+- Evidence so far: the macOS jobs passed on commits `748fabd`, `2b106f2`, `e1e74ae` and `8914a09` (2026-11-03); the commits after that were docs, issue forms and workflow changes.
+
 ## Every later release
-1. `pnpm check && pnpm test && pnpm build` on a clean checkout; the whole CI matrix must be green.
+1. `pnpm check && pnpm test && pnpm build` on a clean checkout; the CI jobs must be green, and the full matrix (run on the tag, or by hand) should be green too.
 2. Bump `version` in `package.json` (the CLI reads it, a test checks they agree) and update `CHANGELOG.md`.
 3. Read `npm pack --dry-run`: the tarball must hold only `dist`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`, `docs` and `action.yml`.
 4. If a recipe changed, run the real-client check on a machine that has the client (`node dist/main.js run --client claude-code --out proof -- <a known-good server>`) and update the README's "Checked" text with the version and system.
