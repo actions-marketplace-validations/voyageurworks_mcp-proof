@@ -7,6 +7,7 @@ import { labelFor } from "./evidence.js";
 import { compareSnapshots, createHome, realHome, snapshot } from "./home.js";
 import type { Launch } from "./launch.js";
 import { parseLog, summarize } from "./log.js";
+import { killAllChildren } from "./proc.js";
 import { redactArgs, scrubPaths } from "./redact.js";
 import type { Recipe, RunResult } from "./types.js";
 
@@ -35,8 +36,19 @@ export interface RunOptions {
 }
 
 export async function runAll(options: RunOptions): Promise<CompatRecord> {
-  const scratch = options.scratchRoot ?? mkdtempSync(path.join(os.tmpdir(), "mcp-proof-"));
-  mkdirSync(scratch, { recursive: true });
+  const base = options.scratchRoot ?? os.tmpdir();
+  mkdirSync(base, { recursive: true });
+  // Everything this run creates lives in one folder of its own, so a run that is interrupted can be cleaned up completely.
+  const scratch = mkdtempSync(path.join(base, "mcp-proof-run-"));
+  const stop = (code: number) => () => {
+    killAllChildren();
+    if (!options.keep) rmSync(scratch, { recursive: true, force: true });
+    process.exit(code);
+  };
+  const onInterrupt = stop(130);
+  const onTerminate = stop(143);
+  process.once("SIGINT", onInterrupt);
+  process.once("SIGTERM", onTerminate);
   const results: ClientResult[] = [];
   for (const recipe of options.recipes) {
     options.onProgress?.(`${recipe.name}: checking`);
@@ -72,7 +84,10 @@ export async function runAll(options: RunOptions): Promise<CompatRecord> {
     });
     if (!options.keep) rmSync(home.root, { recursive: true, force: true });
   }
-  if (!options.keep && !options.scratchRoot) rmSync(scratch, { recursive: true, force: true });
+  process.off("SIGINT", onInterrupt);
+  process.off("SIGTERM", onTerminate);
+  if (options.keep) options.onProgress?.(`Kept the throwaway homes in ${scratch}. They hold the --env values you passed; delete the folder when you are done.`);
+  else rmSync(scratch, { recursive: true, force: true });
   return {
     schema: SCHEMA, tool: "mcp-proof", version: VERSION, generatedAt: new Date().toISOString(), system: systemInfo(),
     server: { command: path.basename(options.server.command), args: redactArgs(options.server.args), envNames: Object.keys(options.serverEnv) },

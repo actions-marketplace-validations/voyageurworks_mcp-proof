@@ -55,3 +55,65 @@ jobs:
       - name: The record is valid
         shell: bash
         run: node dist/main.js validate proof/compat.json
+
+  # The Action is run for real from a tarball built in this job, so action.yml is tested on every system, not only read.
+  action:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm install --global pnpm@10
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Pack the tarball
+        id: pack
+        shell: bash
+        run: |
+          name=$(npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP" | tail -n 1)
+          echo "tgz=$RUNNER_TEMP/$name" >> "$GITHUB_OUTPUT"
+      - name: Run the Action from the tarball
+        uses: ./
+        with:
+          server: node test/fixtures/echo-server.mjs
+          clients: standin
+          out: action-out
+          package: ${{ steps.pack.outputs.tgz }}
+      - name: The Action wrote a valid record
+        shell: bash
+        run: node dist/main.js validate action-out/compat.json
+
+  # The real client, installed on the runner from its official npm package (its install script only copies a native binary
+  # inside the package folder). This is what backs the README's claim about Claude Code outside Windows.
+  real-client:
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm install --global pnpm@10
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: npm install --global @anthropic-ai/claude-code@2.1.317
+      - name: Claude Code starts the test server
+        shell: bash
+        run: node dist/main.js run --client claude-code --out real-proof -- node test/fixtures/echo-server.mjs
+      - name: The record is valid
+        shell: bash
+        run: node dist/main.js validate real-proof/compat.json

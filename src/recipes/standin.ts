@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import readline from "node:readline";
-import { killTree } from "../proc.js";
+import { killTree, trackChild } from "../proc.js";
 import { platformLaunch } from "../launch.js";
 import type { Recipe, RunContext, RunResult } from "../types.js";
 
@@ -19,6 +19,7 @@ export const standin: Recipe = {
   async run(context: RunContext): Promise<RunResult> {
     const real = platformLaunch(context.wrapped);
     const child = spawn(real.command, real.args, { cwd: context.workDir, env: { ...context.home.env, ...context.serverEnv }, stdio: ["pipe", "pipe", "inherit"], windowsHide: true, detached: process.platform !== "win32" });
+    trackChild(child);
     const notes: string[] = [];
     let timedOut = false;
     const timer = setTimeout(() => { timedOut = true; killTree(child.pid); }, context.timeoutMs);

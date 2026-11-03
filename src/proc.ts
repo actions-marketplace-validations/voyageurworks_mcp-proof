@@ -1,5 +1,20 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { platformLaunch, type Launch } from "./launch.js";
+
+const live = new Set<number>();
+
+/** Remember a child so an interrupted run can stop it (children are detached on POSIX, so Ctrl-C does not reach them by itself). */
+export function trackChild(child: ChildProcess): void {
+  const pid = child.pid;
+  if (!pid) return;
+  live.add(pid);
+  child.once("close", () => live.delete(pid));
+}
+
+export function killAllChildren(): void {
+  for (const pid of [...live]) killTree(pid);
+  live.clear();
+}
 
 export interface ProcResult { code: number | null; stdout: string; stderr: string; timedOut: boolean; started: boolean }
 
@@ -15,6 +30,7 @@ export function runProcess(launch: Launch, options: { env: Record<string, string
     let settled = false;
     const finish = (result: ProcResult) => { if (!settled) { settled = true; clearTimeout(timer); resolve(result); } };
     const child = spawn(real.command, real.args, { cwd: options.cwd, env: options.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, detached: process.platform !== "win32" });
+    trackChild(child);
     const timer = setTimeout(() => { timedOut = true; killTree(child.pid); }, options.timeoutMs);
     child.stdout.on("data", chunk => { if (stdout.length < CAP) stdout += chunk.toString("utf8"); });
     child.stderr.on("data", chunk => { if (stderr.length < CAP) stderr += chunk.toString("utf8"); });

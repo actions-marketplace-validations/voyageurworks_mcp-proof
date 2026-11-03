@@ -29,6 +29,10 @@ inputs:
     description: Version range of @voyageurworks/mcp-proof to run.
     required: false
     default: "0"
+  package:
+    description: Advanced. A package spec or tarball path to run instead of the published version, for example a tarball built earlier in the same job.
+    required: false
+    default: ""
 
 outputs:
   out:
@@ -48,12 +52,14 @@ runs:
         MCP_PROOF_OUT: ${{ inputs.out }}
         MCP_PROOF_TIMEOUT: ${{ inputs.timeout }}
         MCP_PROOF_VERSION: ${{ inputs.version }}
+        MCP_PROOF_PACKAGE: ${{ inputs.package }}
       run: |
         set -euo pipefail
         args=(run --server "$MCP_PROOF_SERVER" --out "$MCP_PROOF_OUT" --timeout "$MCP_PROOF_TIMEOUT")
         for id in $MCP_PROOF_CLIENTS; do args+=(--client "$id"); done
         for item in $MCP_PROOF_ENV; do args+=(--env "$item"); done
-        npx -y "@voyageurworks/mcp-proof@${MCP_PROOF_VERSION}" "${args[@]}"
+        spec="${MCP_PROOF_PACKAGE:-@voyageurworks/mcp-proof@${MCP_PROOF_VERSION}}"
+        npx -y "$spec" "${args[@]}"
     - name: Add the table to the job summary
       if: always()
       shell: bash
