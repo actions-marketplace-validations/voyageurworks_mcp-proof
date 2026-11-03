@@ -1,25 +1,13 @@
 name: CI
 
-# Every push and pull request runs Ubuntu and Windows (Node 22 and 24) plus ONE macOS job that does all the macOS checks in turn.
-# The full matrix (every check on all three systems, macOS on Node 22 and 24) runs when a v* tag is pushed, or by hand:
-# Actions, CI, Run workflow, full = true. GitHub's free macOS runners are scarce and capped at 5 jobs at once, so ordinary
-# pushes ask for one macOS job instead of five, and a stale run on the same ref is cancelled rather than left queued.
+# Ubuntu and Windows, Node 22 and 24, plus the stand-in client, the Action and the real client on each. macOS is checked in its own
+# workflow (macos.yml): GitHub's free macOS runners are often not assigned, and a runner shortage must not turn this workflow red.
 on:
   push:
     branches: [main]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
-    inputs:
-      full:
-        description: Run every check on all three systems, including macOS on Node 22 and 24
-        type: boolean
-        default: false
-  workflow_call:
-    inputs:
-      full:
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -29,35 +17,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  plan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      os: ${{ steps.p.outputs.os }}
-      full: ${{ steps.p.outputs.full }}
-    steps:
-      - id: p
-        shell: bash
-        env:
-          FULL_INPUT: ${{ inputs.full }}
-          REF: ${{ github.ref }}
-        run: |
-          full=false
-          if [ "$FULL_INPUT" = "true" ] || [[ "$REF" == refs/tags/v* ]]; then full=true; fi
-          echo "full=$full" >> "$GITHUB_OUTPUT"
-          if [ "$full" = true ]; then
-            echo 'os=["ubuntu-latest","windows-latest","macos-latest"]' >> "$GITHUB_OUTPUT"
-          else
-            echo 'os=["ubuntu-latest","windows-latest"]' >> "$GITHUB_OUTPUT"
-          fi
-
   check:
-    needs: plan
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(needs.plan.outputs.os) }}
+        os: [ubuntu-latest, windows-latest]
         node: [22, 24]
     runs-on: ${{ matrix.os }}
     steps:
@@ -74,14 +39,13 @@ jobs:
       - run: pnpm build
 
   # mcp-proof checks a server with its own built-in client on every operating system, so the claim in the README
-  # ("the stand-in is verified on all three") is proven on each full run. Real clients are not installed on hosted runners.
+  # ("the stand-in is verified on all three") is backed by a run. Real clients are not installed on hosted runners.
   self-proof:
-    needs: plan
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(needs.plan.outputs.os) }}
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -102,12 +66,11 @@ jobs:
 
   # The Action is run for real from a tarball built in this job, so action.yml is tested, not only read.
   action:
-    needs: plan
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(needs.plan.outputs.os) }}
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -137,14 +100,13 @@ jobs:
         run: node dist/main.js validate action-out/compat.json
 
   # The real client, installed on the runner from its official npm package (its install script only copies a native binary
-  # inside the package folder). This is what backs the README's claim about Claude Code outside Windows.
+  # inside the package folder). This is what backs the README's claim about Claude Code.
   real-client:
-    needs: plan
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(needs.plan.outputs.os) }}
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -163,49 +125,3 @@ jobs:
       - name: The record is valid
         shell: bash
         run: node dist/main.js validate real-proof/compat.json
-
-  # Ordinary pushes: ONE macOS job that does, in turn, what the full matrix does on macOS (Node 22). Each step still runs
-  # if an earlier one failed, so one run reports everything. On a full run the macOS jobs above replace this one.
-  macos:
-    needs: plan
-    if: ${{ needs.plan.outputs.full != 'true' }}
-    runs-on: macos-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-      - run: npm install --global pnpm@10
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      - run: pnpm test
-      - run: pnpm build
-      - name: The stand-in client verifies the test server
-        if: ${{ !cancelled() }}
-        run: node dist/main.js run --client standin --out proof -- node test/fixtures/echo-server.mjs && node dist/main.js validate proof/compat.json
-      - name: Pack the tarball
-        id: pack
-        if: ${{ !cancelled() }}
-        run: |
-          name=$(npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP" | tail -n 1)
-          echo "tgz=$RUNNER_TEMP/$name" >> "$GITHUB_OUTPUT"
-      - name: Run the Action from the tarball
-        if: ${{ !cancelled() && steps.pack.outcome == 'success' }}
-        uses: ./
-        with:
-          server: node test/fixtures/echo-server.mjs
-          clients: standin
-          out: action-out
-          package: ${{ steps.pack.outputs.tgz }}
-      - name: The Action wrote a valid record
-        if: ${{ !cancelled() && steps.pack.outcome == 'success' }}
-        run: node dist/main.js validate action-out/compat.json
-      - name: Install the real client
-        if: ${{ !cancelled() }}
-        run: npm install --global @anthropic-ai/claude-code@2.1.317
-      - name: Claude Code starts the test server
-        if: ${{ !cancelled() }}
-        run: node dist/main.js run --client claude-code --out real-proof -- node test/fixtures/echo-server.mjs && node dist/main.js validate real-proof/compat.json
