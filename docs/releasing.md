@@ -17,4 +17,4 @@ Nothing here has been done yet. Every step that goes outside this computer needs
 5. Tag `vX.Y.Z`, publish the GitHub release; the workflow pauses at the `npm-publish` environment. Before approving, check the tag, the version and the tarball. Moving the `v0` Action tag is a separate, deliberate step.
 
 ## What 0.1.0 does and does not claim
-It claims a `compat.json` schema 1 that is meant to stay stable, and honest labels. It supports one real client (Claude Code); the README says so. Under 0.x the command line may still change in a minor release; a 1.0 should wait until more than one real client has been run and the CI matrix has been green on a real repository.
+It claims a `compat.json` schema 1 that is meant to stay stable, and honest labels. It supports one real client (Claude Code); the README says so. Under 0.x the command line may still change in a minor release; a 1.0 should wait until more than one real client has been run. The CI matrix (3 systems, Node 22 and 24, the stand-in, the Action from a tarball, and Claude Code 2.1.317 on each system) was green on a private repository on 2026-11-03.

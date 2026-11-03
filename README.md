@@ -46,8 +46,8 @@ mcp-proof stand-in client  verified built-in
 
 | Client | How it is driven | Checked |
 | --- | --- | --- |
-| Claude Code | `claude mcp add` then `claude mcp list` in a throwaway home (`CLAUDE_CONFIG_DIR` and all home variables redirected). Claude Code's health check starts the server and sends `initialize`, `notifications/initialized` and `tools/list`. No login is needed. | Claude Code 2.1.317 on Windows 11. macOS and Linux are not run by the maintainers; the CI matrix runs the stand-in only. |
-| Built-in stand-in | A minimal client inside mcp-proof: `initialize`, `notifications/initialized`, `tools/list`. It is **not a real client product** and is labelled that way everywhere. | Run by the maintainers on Windows 11 and on Linux (Ubuntu under WSL, Node 24.21), including a timeout with no orphaned server left behind. macOS has not been run by hand; the CI workflow in this repository covers Linux, macOS and Windows. |
+| Claude Code | `claude mcp add` then `claude mcp list` in a throwaway home (`CLAUDE_CONFIG_DIR` and all home variables redirected). Claude Code's health check starts the server and sends `initialize`, `notifications/initialized` and `tools/list`. No login is needed. | Claude Code 2.1.317, by hand on Windows 11 and in GitHub Actions on Ubuntu, macOS and Windows runners (installed from its official npm package), 2026-11-03. |
+| Built-in stand-in | A minimal client inside mcp-proof: `initialize`, `notifications/initialized`, `tools/list`. It is **not a real client product** and is labelled that way everywhere. | GitHub Actions on Ubuntu, macOS and Windows with Node 22 and 24, and by hand on Windows 11 and on Ubuntu under WSL. A timeout or Ctrl-C stops the server and removes the throwaway folders (tested on Linux and macOS). |
 
 More clients are added as recipes, each tested against the real client before it is listed. mcp-proof does not claim support for a client it has not run.
 
