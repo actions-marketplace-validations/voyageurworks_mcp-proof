@@ -4,6 +4,9 @@
   "description": "Prove an MCP server starts in real clients: runs it through each client in a throwaway home and records dated, labelled evidence.",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/voyageurworks/mcp-proof.git" },
+  "homepage": "https://github.com/voyageurworks/mcp-proof#readme",
+  "bugs": { "url": "https://github.com/voyageurworks/mcp-proof/issues" },
+  "publishConfig": { "access": "public" },
   "type": "module",
   "bin": { "mcp-proof": "dist/main.js" },
   "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "SECURITY.md", "docs", "action.yml"],
@@ -13,7 +16,7 @@
     "build": "tsc -p .",
     "check": "tsc -p . --noEmit",
     "test": "vitest run",
-    "prepublishOnly": "pnpm check && pnpm test"
+    "prepublishOnly": "pnpm check && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
