@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 (2026-11-04)
+
+No change to the program. This release brings the packaged README and docs up to date with the repository (macOS testing notes), and the CI changes below.
+
+- CI only: a new `macOS monthly report` workflow runs on the 1st of each month and posts the facts (macOS jobs passed, failed or without a runner, and any run where macOS was not verified) as a comment on the macOS tracking issue, with a status and a recommendation. A recommendation to close the issue needs runs spanning 60 days.
 
 - CI only: the macOS workflow now runs on every pull request (not on pushes to `main`), on explicit runner labels (`macos-15-intel`, `macos-15`) instead of `macos-latest`, on Intel and Apple silicon, and has one required check, `macOS result`: a macOS job that ran and failed blocks the merge; if GitHub assigns no Mac, the check passes with a visible warning that macOS was not verified. Every macOS job still runs the stand-in client, the Action from the tarball and the real Claude Code client.
 
