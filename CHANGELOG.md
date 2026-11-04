@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-11-04)
+- First release published by the release workflow (npm trusted publishing, with provenance).
 - Claude Code is started with `MCP_TIMEOUT` set from mcp-proof's `--timeout`, so a server that first has to be downloaded (a cold `npx` cache) no longer shows `failed` because Claude Code's default start-up wait of about 30 seconds ran out. Measured with a server that takes 40 seconds to become ready: `failed` after 32 s before, `verified` after 42 s now.
 - The macOS checks run in their own workflow, so a missing GitHub macOS runner cannot turn `CI` red.
 
