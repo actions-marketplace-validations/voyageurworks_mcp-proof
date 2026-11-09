@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Tests only: `src/signal.test.ts` no longer counts a killed-but-not-yet-collected (zombie) server as still running, and prints the process table if the server really is still running after an interrupt. The test failed once on macOS in CI and passed on re-run; 84 stress runs on Apple silicon and Intel found no failure.
+
 - Tests only: `src/freeRunners.test.ts` fails if a workflow uses a runner label that is not on the free list (larger, GPU, self-hosted or unknown runners could be billed), so the CI stays within GitHub's free tier.
 
 - CI only: a `CodeQL` workflow scans the TypeScript/JavaScript code on pushes to `main`, pull requests and weekly (results under Security > Code scanning; not a required check).
