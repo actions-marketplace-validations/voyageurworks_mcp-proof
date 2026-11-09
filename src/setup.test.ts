@@ -98,3 +98,11 @@ describe("the documents carry the same text the command prints", () => {
     expect(readFileSync(path.join(root, "docs", "setup-prompt.md"), "utf8").replace(/\r\n/g, "\n")).toContain(SETUP_PROMPT);
   });
 });
+
+describe("quoting the evidence folder", () => {
+  it("escapes backslashes before quotes", () => {
+    const bs = String.fromCharCode(92);
+    const text = setupSteps({ server: "node s.js", out: `my${bs}proof "x"`, ci: false });
+    expect(text).toContain(`--out "my${bs}${bs}proof ${bs}"x${bs}""`);
+  });
+});

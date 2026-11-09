@@ -42,7 +42,7 @@ export function defaultServer(cwd: string): string | undefined {
   }
 }
 
-const quote = (value: string) => (/[\s"']/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value);
+const quote = (value: string) => (/[\s"']/.test(value) ? `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` : value);
 
 /** Every step as text. Pure, so it can be tested for each choice. */
 export function setupSteps(choice: SetupChoice): string {
