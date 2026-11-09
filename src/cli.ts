@@ -7,6 +7,7 @@ import { renderBadges } from "./badge.js";
 import { parseLaunch, type Launch } from "./launch.js";
 import { RECIPES, recipeById } from "./recipes/index.js";
 import { runAll, VERSION } from "./run.js";
+import { nextHints, setupCommand, terminalAsk } from "./setup.js";
 import { renderSummary, renderTable } from "./table.js";
 import { wrap } from "./wrap.js";
 
@@ -16,6 +17,7 @@ const USAGE = [
   "mcp-proof: prove an MCP server starts in real clients.",
   "",
   "Usage:",
+  "  mcp-proof setup                         a guided first run: asks a few questions and prints every step (--prompt: a block for an AI assistant)",
   "  mcp-proof run [options] -- <server command> [args...]",
   "  mcp-proof run [options] --server \"<server command line>\"",
   "  mcp-proof clients                       list clients and whether each is installed",
@@ -80,7 +82,7 @@ function parseRun(argv: string[], io: Io, environment: NodeJS.ProcessEnv): RunAr
     if (serverText !== undefined && trailing.length > 0) throw new Error("Give the server once: with --server or after --, not both.");
     if (serverText !== undefined) args.server = parseLaunch(serverText);
     else if (trailing.length > 0) args.server = { command: trailing[0]!, args: trailing.slice(1) };
-    else throw new Error("Say which server to check: mcp-proof run -- <server command>.");
+    else throw new Error("Say which server to check, for example: mcp-proof run -- npx -y your-mcp-server (or run mcp-proof setup for a guided first run).");
   } catch (error) {
     io.err(`mcp-proof: ${(error as Error).message}\n`);
     return null;
@@ -102,6 +104,16 @@ export async function main(argv: string[], io: Io, environment: NodeJS.ProcessEn
   const [command, ...rest] = argv;
   if (command === undefined || command === "--help" || command === "-h" || command === "help") { io.out(USAGE); return command === undefined ? 2 : 0; }
   if (command === "--version" || command === "-v") { io.out(`${VERSION}\n`); return 0; }
+
+  if (command === "setup") {
+    const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY) && !rest.includes("--help") && !rest.includes("--prompt");
+    const terminal = interactive ? terminalAsk() : undefined;
+    try {
+      return await setupCommand(rest, { ...io, ask: terminal?.ask, interactive, cwd: process.cwd() });
+    } finally {
+      terminal?.close();
+    }
+  }
 
   if (command === "wrap") {
     const dash = rest.indexOf("--");
@@ -158,6 +170,7 @@ export async function main(argv: string[], io: Io, environment: NodeJS.ProcessEn
     const record = await runAll({ server: args.server, recipes, serverEnv: args.env, timeoutMs: args.timeoutSec * 1000, scratchRoot: args.scratch, serverCwd: path.resolve(args.cwd ?? process.cwd()), keep: args.keep, onProgress: message => io.err(`${message}\n`) });
     if (args.out) writeOutputs(args.out, record);
     io.out(args.json ? `${JSON.stringify(record, null, 2)}\n` : renderSummary(record));
+    if (!args.json) io.err(`\n${nextHints(record.results.map(result => result.label), { out: args.out, server: args.server.command }).map(line => `- ${line}`).join("\n")}\n`);
     const ran = record.results.filter(result => result.label !== "not-installed");
     const named = new Set(args.clients);
     const missingNamed = record.results.some(result => result.label === "not-installed" && named.has(result.client));

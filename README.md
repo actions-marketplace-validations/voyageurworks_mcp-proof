@@ -52,6 +52,12 @@ mcp-proof stand-in client  verified built-in
 
 More clients are added as recipes, each tested against the real client before it is listed. mcp-proof does not claim support for a client it has not run.
 
+## Guided first run
+
+New here? `npx -y @voyageurworks/mcp-proof setup` asks which server you want to prove (it suggests `npx -y <name>` from a `package.json` beside you), prints every step with your server filled in and tells you how to paste the result into your README. It writes nothing and runs nothing itself. Or paste [a ready-made prompt](docs/setup-prompt.md) into an AI assistant that can run commands.
+
+After every `run` it also says, on the error stream, what to do next. The most common surprise is a cold start: a server started with `npx` that is not cached yet can take longer than a client waits, and the client shows `failed`. Run the server once first, then run mcp-proof again.
+
 ## Use
 
 ```sh

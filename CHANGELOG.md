@@ -1,13 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 (2026-11-09)
+
+First-run polish; the labels, `compat.json`, exit codes and `--json` output are unchanged.
+
+- **Guided first run.** `mcp-proof setup` asks which server to prove (default: `npx -y <name>` from the `package.json` beside you), which folder gets the evidence and whether you want a GitHub Actions job (`--server`, `--out`, `--ci`), then prints every step with your server filled in: a warm-up for a server that has to be downloaded, `clients`, the `run` command, what each label means, and how to paste the table and badges into a README. It writes nothing and runs nothing itself. `setup --prompt` prints a block to paste into an AI assistant that can run commands ([docs/setup-prompt.md](docs/setup-prompt.md)).
+- **Next steps after every `run`** (not with `--json`), on the error stream so the summary on stdout stays exactly the summary: what to do with a verified result, what a `failed` or `started` usually means, and that `not-installed` is not a failure.
+- **The cold-start trap is explained.** A server started with `npx` (or another downloader) that is not yet cached can take longer than a client waits, and the client then shows `failed`. `setup` and the hints say to run the server once first, then run again (`--timeout 180` gives more time, `--keep` keeps the throwaway home).
+- The error for a `run` without a server now shows an example and points at `setup`.
+- Tested from the packed tarball in a throwaway home, several runs, including a real Claude Code.
+
+Also in this release (tests only, no change to the program):
 
 - Tests only: `src/signal.test.ts` no longer counts a killed-but-not-yet-collected (zombie) server as still running, and prints the process table if the server really is still running after an interrupt. The test failed once on macOS in CI and passed on re-run; 84 stress runs on Apple silicon and Intel found no failure.
-
 - Tests only: `src/freeRunners.test.ts` fails if a workflow uses a runner label that is not on the free list (larger, GPU, self-hosted or unknown runners could be billed), so the CI stays within GitHub's free tier.
-
 - CI only: a `CodeQL` workflow scans the TypeScript/JavaScript code on pushes to `main`, pull requests and weekly (results under Security > Code scanning; not a required check).
-
 - CI only: the `macOS monthly report` workflow also writes its facts (fixed words and numbers) to `status.json` on the `macos-report` branch, so an automatic reviewer can read them without the GitHub API.
 
 ## 0.1.2 (2026-11-04)
