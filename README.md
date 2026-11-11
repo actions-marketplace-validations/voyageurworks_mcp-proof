@@ -36,9 +36,9 @@ mcp-proof stand-in client  verified built-in
 
 | Label | Meaning |
 | --- | --- |
-| `verified` | The client started the server. The log shows `initialize` answered, `notifications/initialized` sent and `tools/list` answered. |
-| `started` | The client started the server and `initialize` was answered, but `tools/list` was not. |
-| `failed` | The client ran, but the server never completed `initialize` (or the client could not be driven). |
+| `verified` | The client started the server. The log shows the handshake answered (`initialize` with `notifications/initialized` sent, or the newer `server/discover`) and `tools/list` answered. |
+| `started` | The client started the server and the handshake was answered, but `tools/list` was not. |
+| `failed` | The client ran, but the server never completed the handshake (`initialize` or `server/discover`), or the client could not be driven. |
 | `not-installed` | The client is not on this machine, so nothing was run. mcp-proof prints where to install it by hand. |
 
 `read` and `documented` exist in the file format for claims that did not start a server; mcp-proof itself never produces them.
@@ -47,7 +47,7 @@ mcp-proof stand-in client  verified built-in
 
 | Client | How it is driven | Checked |
 | --- | --- | --- |
-| Claude Code | `claude mcp add` then `claude mcp list` in a throwaway home (`CLAUDE_CONFIG_DIR` and all home variables redirected). Claude Code's health check starts the server and sends `initialize`, `notifications/initialized` and `tools/list`. No login is needed. | Claude Code 2.1.317, by hand on Windows 11 and in GitHub Actions on Ubuntu and Windows runners (installed from its official npm package), and on macOS in the same way on the release commit `2dd6e91` (the `v0.1.0` tag) and on `33f90fa`, 2026-11-03. |
+| Claude Code | `claude mcp add` then `claude mcp list` in a throwaway home (`CLAUDE_CONFIG_DIR` and all home variables redirected). Claude Code's health check starts the server and sends `initialize`, `notifications/initialized` and `tools/list`; Claude Code 2.1.322 first tries `server/discover` and skips `initialize` when the server answers it. No login is needed. | Claude Code 2.1.322, by hand on Windows 11 on 2026-11-11 (a server that answers `server/discover` and one that does not); Claude Code 2.1.317, by hand on Windows 11 and in GitHub Actions on Ubuntu and Windows runners (installed from its official npm package), and on macOS in the same way on the release commit `2dd6e91` (the `v0.1.0` tag) and on `33f90fa`, 2026-11-03. |
 | Built-in stand-in | A minimal client inside mcp-proof: `initialize`, `notifications/initialized`, `tools/list`. It is **not a real client product** and is labelled that way everywhere. | GitHub Actions on Ubuntu and Windows with Node 22 and 24 (the `CI` badge), on macOS in a separate workflow (the `macOS` badge; passed on the release commit `2dd6e91` and on `33f90fa`), and by hand on Windows 11 and on Ubuntu under WSL. A timeout or Ctrl-C stops the server and removes the throwaway folders (tested on Linux and macOS in CI). |
 
 More clients are added as recipes, each tested against the real client before it is listed. mcp-proof does not claim support for a client it has not run.
@@ -87,7 +87,7 @@ The Action runs on the runner you choose, so it only finds clients you installed
 
 ## What it records, and what it never does
 
-- **The log holds method names only.** For every message it stores the direction, the kind (request, notification, response, error), the method name and a plain integer id. Parameters, results, tool names, tool output and every other field are dropped before anything is written, so a log or `compat.json` can be shown to anyone, including an AI assistant.
+- **The log holds method names only.** For every message it stores the direction, the kind (request, notification, response, error), the method name and a small integer that pairs a request with its answer (the id the client chose, which may be any string or number, is never written). Parameters, results, tool names, tool output and every other field are dropped before anything is written, so a log or `compat.json` can be shown to anyone, including an AI assistant.
 - **Credentials do not reach the client.** The client's environment is built from an allow-list (path, temp folder, proxy settings, locale). Anything that looks like a login (`*KEY*`, `*TOKEN*`, `*SECRET*`, `ANTHROPIC_*` and so on) is not passed on. A variable your server needs is given with `--env`; only its name is recorded, and its value is also scrubbed from notes. The value does have to reach the client, so it is written into the client's config inside the throwaway home; that home is deleted when the run ends, but a home you keep with `--keep` (or one left by a run that was killed) holds those values until you delete it.
 - **Your command line is scrubbed.** Arguments that follow a flag like `--api-key`, `NAME=value` pairs with a sensitive name, long random-looking words and passwords inside URLs are replaced with `<redacted>` in the record.
 - **No private paths.** Throwaway paths are shown as `<home>`; nothing from your real home appears.
