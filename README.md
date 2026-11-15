@@ -1,3 +1,5 @@
+<img src=".github/brand/banner.jpg" width="100%" alt="A plug seated in its socket, with a line of seals running on from it.">
+
 <img src=".github/brand/icon.png" align="right" width="112" alt="mcp-proof icon">
 
 # mcp-proof
